@@ -152,7 +152,46 @@
 	    	onclick="document.location='{% url slice_create project.id %}'" />
 		</div>
 	</div>
-		
+{% if vtplanner = 1 %}
+	<h2>Virtual Slices</h2>
+	<div class="vslice_list">
+		<div class="table_div">
+			<table class="fulltable" id="vslice_table">
+				<tr class="head">
+		            <th class="name">Name</th>
+					<th class="description">Description</th>
+					<th class="resources">Size</th>
+					<th class="owner">Owner</th>
+					<th class="status">Reserved?</th>
+					<th class="actions">Actions</th>
+				</tr>
+				{% for vslice in project.vslice_set.all %}
+				<tr class="body">
+					<td class="name"><a href="{% url vslice_detail vslice.id %}">{{ vslice.name }}</a></td>
+					<td class="description">{{ vslice.description }}</td>
+					<td class="resources">{{ vslice.resource_set.all.count }}</td>
+					<td class="owner">
+						{% with vslice.owner as user %}
+						<div class="val user_desc">{{ user.username }}</div>
+						<div class="description user_desc">{% include "users/tooltipdesc.html" %}</div>
+						{% endwith %}
+			        </td>
+					<td class="status">{% if vslice.started and not slice.modified %}<img src="{% url img_media 'active.png' %}">{% else %}<img src="{% url img_media 'inactive.png' %}">{% endif %}</td>
+					<td class="actions">
+						<a href="{% url vslice_detail vslice.id %}">details</a>,
+						<a href="{% url vslice_delete vslice.id %}">delete</a>
+					</td>
+				</tr>
+				{% endfor %}
+			</table>
+		</div>
+		<div class="center">
+	    	<input type="button" value="Create Virtual Slice"
+	    	onclick="document.location='{% url vslice_create project.id %}'" />
+		</div>
+	</div>	
+{% endif %}	
+	
 	<h2>Role Requests
 	<img id="role_req_help_img" src="{% url img_media 'question_mark_15x15.png' %}" />
 	</h2>

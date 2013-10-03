@@ -23,6 +23,7 @@
                 <th class="owners">Owners</th>
                 <th class="members">Members</th>
                 <th class="slices">Slices</th>
+                <th class="slices">Virtual Slices</th>
                 <th class="actions">Actions</th>
 			</tr>
 			{% for project in project_list %}
@@ -61,6 +62,23 @@
 					{% endif %}
 					{% endfor %}
                 </td>
+                <td class="slices">
+                	{% for vslice in project.vslice_set.all %}
+					{% if forloop.counter < 2 %}
+                	<a href="{% url vslice_detail vslice.id %}">{{ vslice.name }}</a>{% if not forloop.last %},{% endif %}
+					{% else %}
+					{% if forloop.counter == 2 %}
+					<div class="val vslicecontinue">...</div>
+					<div class="description vslicecontinue">
+					{% endif %}
+						<a href="{% url vslice_detail vslice.id %}">{{ vslice.name }}</a>{% if not forloop.last %},{% endif %}
+					{% if forloop.last %}
+					</div>
+					{% endif %}
+					{% endif %}
+					{% endfor %}
+                </td>
+                
 				<td class="actions">
 					<a href="{% url project_detail project.id %}">details</a>,
 					<a href="{% url project_delete project.id %}">delete</a>

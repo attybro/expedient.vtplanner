@@ -16,6 +16,8 @@ from vt_manager.controller.drivers.VTDriver import VTDriver
 @rpcmethod(url_name="plugin")
 #def send(callBackUrl, expID, xml):
 def send(callBackUrl, xml):
+  print ("STO MANDANDO")
+  print xml
 	try:
 		logging.debug("XML RECEIVED: \n%s" % xml)
 		rspec = XmlHelper.parseXmlString(xml)

@@ -42,6 +42,8 @@ DEFAULT_OWNER_PERMISSIONS = [
     "can_add_members", "can_remove_members",
     "can_create_slices", "can_edit_slices", "can_delete_slices",
     "can_start_slices", "can_stop_slices",
+    "can_create_vslices", "can_edit_vslices", "can_delete_vslices",
+    "can_start_vslices", "can_stop_vslices","can_use_aggregate",
     "can_add_aggregates", "can_remove_aggregates",
     "can_create_roles", "can_edit_roles",
 ]
@@ -56,6 +58,8 @@ DEFAULT_RESEARCHER_PERMISSIONS = [
     "can_view_project",
     "can_create_slices", "can_edit_slices", 
     "can_start_slices", "can_stop_slices",
+    "can_create_vslices", "can_edit_vslices", 
+    "can_start_vslices", "can_stop_vslices",
 ]
 
 def list(request):
@@ -71,13 +75,13 @@ def list(request):
     )
 
 @require_objs_permissions_for_view(
-    perm_names=["can_delete_slices"],
+    perm_names=["can_delete_slices", "can_delete_vslices"],
     permittee_func=get_user_from_req,
     target_func=get_queryset(Project, "proj_id"),
     methods=["GET", "POST"],
 )
 @require_objs_permissions_for_view(
-    perm_names=["can_delete_project"],
+    perm_names=["can_delete_project", "can_delete_vslices"],
     permittee_func=get_user_from_req,
     target_func=get_queryset(Project, "proj_id"),
     methods=["GET", "POST"],
@@ -128,6 +132,16 @@ def detail(request, proj_id):
     role_reqs = ProjectRoleRequest.objects.filter(
         giver=request.user, requested_role__project=project)
     # Structure with members, ids and roles to pass to project template
+    vtplanner=0
+    for item in project.aggregates.all():
+		if (item.leaf_name=="VtPlannerAggregate"):
+			vtplanner=1
+			
+
+
+		# with project.aggregates.all as aggregate_list %}
+		# if aggregate_list.count %}
+		# for generic_am in aggregate_list %}
     permittees = project.members_as_permittees.all()
     member_roles = dict()
     for permittee in permittees:
@@ -145,7 +159,8 @@ def detail(request, proj_id):
             "breadcrumbs": (
                 ("Home", reverse("home")),
                 ("Project %s" % project.name, reverse("project_detail", args=[project.id])),
-            )
+            ),
+            "vtplanner" : vtplanner
         }
     )
 

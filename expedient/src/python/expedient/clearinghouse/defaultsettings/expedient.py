@@ -104,6 +104,7 @@ The accuracy will depend on how often the expedient cron job runs.
 '''
 
 MAX_SLICE_LIFE = 30
+MAX_VSLICE_LIFE = 120
 '''Maximum life of a slice without renewing in days'''
 
 # What is the scheme to use when sending urls? 

@@ -17,6 +17,7 @@ from expedient.common.permissions.utils import get_user_from_req, get_queryset,\
 from django.contrib.auth.models import User
 from expedient.clearinghouse.project.models import Project
 from expedient.clearinghouse.slice.models import Slice
+from expedient.clearinghouse.vslice.models import Vslice
 import traceback
 
 logger = logging.getLogger("AggregateViews")
@@ -73,6 +74,8 @@ def delete(request, agg_id):
     if request.method == "POST":
         for s in aggregate.slice_set.all():
             aggregate.stop_slice(s)
+        for l in aggregate.vslice_set.all():
+            aggregate.stop_vslice(l)	
     # Delete the aggregate.
     req = create_update.delete_object(
         request,
@@ -115,7 +118,8 @@ def get_can_use_permission(request, permission, permittee,
     assert(
         isinstance(permittee, User) or
         isinstance(permittee, Project) or
-        isinstance(permittee, Slice)
+        isinstance(permittee, Slice) or
+        isinstance(permittee, Vslice)
     )
     assert(permission.name == "can_use_aggregate")
 
@@ -132,6 +136,9 @@ def get_can_use_permission(request, permission, permittee,
     elif isinstance(permittee, Slice):
         return HttpResponseRedirect(
             aggregate.as_leaf_class().add_to_slice(permittee, next))
+    elif isinstance(permittee, Vslice):
+        return HttpResponseRedirect(
+            aggregate.as_leaf_class().add_to_vslice(permittee, next))
     else: # isinstance(permittee, User)
         return HttpResponseRedirect(
             aggregate.as_leaf_class().add_to_user(permittee, next))

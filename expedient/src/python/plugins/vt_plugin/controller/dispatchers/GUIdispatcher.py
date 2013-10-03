@@ -22,6 +22,7 @@ from expedient.common.messaging.context_processors import messaging
 from expedient.common.messaging.models import DatedMessage
 
 from expedient.clearinghouse.slice.models import Slice
+from expedient.clearinghouse.vslice.models import Vslice
 from expedient.clearinghouse.project.models import Project
 from expedient.common.utils.plugins.plugincommunicator import PluginCommunicator
 from expedient.common.utils.plugins.resources.node import Node
@@ -46,32 +47,104 @@ def goto_create_vm(request, slice_id, agg_id):
         else:
             return HttpResponseRedirect("/")
 
+def virtualmachine_crud_vslice(request, vslice_id, server_id):
+    print "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"
+    error_crud = ""
+    server_id=6
+    #serv = get_object_or_404(VTServer, id = server_id)
+    vslice = get_object_or_404(Vslice, id = vslice_id)
+    virtualmachines = VM.objects.filter(sliceId=vslice.uuid)
+    error_crud = ""
+    serv = get_object_or_404(VTServer, id = server_id)
+    try:
+        if request.method == "POST":    
+            if 'create_new_vms' in request.POST:
+                ## "Done" pressed ==> send xml to AM
+                print "vai che el va 2"
+                form = VMModelForm()
+                #form['name']="aaa"
+                instance = form.save(commit=False)
+                instance.setName(request.POST.get('name'))
+                instance.setMemory(int(request.POST.get('memory')))
+                
+                instance.setHDsetupType('file-image')
+                instance.setHDoriginPath('file-image')
+                instance.setVirtualizationSetupType('paravirtualization')
+                instance.setDiscImage('default')
+                #instancesetServerID(server_id)
+                print instance.name
+                print instance.memory
+                print instance.serverID
+                print instance.hdSetupType
+                print instance.hdOriginPath
+                print instance.virtualizationSetupType
+                print instance.disc_image
+                #return HttpResponseRedirect(reverse("vslice_detail",args=[vslice_id]))
+                #vtamId=request.POST.get('vtamId')
+                VMcontroller.processVMCreationVslice(instance, serv.uuid, vslice, request.user)
+                return HttpResponseRedirect(reverse("vslice_detail",args=[vslice_id]))
+                #form = VMModelForm(request.POST)
+                '''
+                if form.is_valid():
+                    instance = form.save(commit=False)
+                    ##create virtualmachines from received formulary
+                    VMcontroller.processVMCreationVslice(instance, serv.uuid, vslice, request.user)
+                    return HttpResponseRedirect(reverse("vslice_detail",args=[vslice_id]))
+                ## Form not valid => raise error
+                
+                else:
+                    #if "VM already exists" in form.errors[0]:
+                        #raise ValidationError("It already exists a VM with the same name in the same slice. Please choose another name", code="invalid",)
+                    raise ValidationError("Invalid input: either VM name contains non-ASCII characters, underscores, whitespaces or the memory is not a number or less than 128Mb.", code="invalid",)
+                '''
+        else:
+            #form = VMModelForm()
+            return HttpResponseRedirect("/")
+
+    except ValidationError as e:
+        ## Django exception message handling is different to Python's...
+        error_crud = ";".join(e.messages)
+    #except Exception as e:
+        #print "normal exception here: %s" % str(e)
+        #DatedMessage.objects.post_message_to_user(
+        #    "VM might have been created, but some problem ocurred: %s" % str(e),
+        #    request.user, msg_type=DatedMessage.TYPE_ERROR)
+        #return HttpResponseRedirect(reverse("home"))
+    #return HttpResponseRedirect("/")
+    #return simple.direct_to_template(
+    #    request, template="vt_plugin_aggregate_add_virtualmachines.html",
+    #    extra_context={"virtual_machines": virtualmachines, "exception": error_crud,
+    #                    "server_name": serv.name, "form": form,"slice":slice,
+    #                    "breadcrumbs": (
+    #                ("Home", reverse("home")),
+    #                ("Project %s" % vslice.project.name, reverse("project_detail", args=[vslice.project.id])),
+    #                ("Slice %s" % vslice.name, reverse("vslice_detail", args=[vslice_id])),
+    #                ##("Create VM in server %s" %serv.name, reverse("virtualmachine_crud", args=[vslice_id, server_id])),
+    #                ("Create VM in server Pippo", reverse("virtualmachine_crud", args=[vslice_id, server_id])),
+    #            )
+    #    })
+    
 def virtualmachine_crud(request, slice_id, server_id):
 
     """Show a page that allows user to add VMs to the VT server."""
+    print "-----------------SERVER ID-------------------"
+    print server_id
+    #return HttpResponseRedirect(reverse("slice_detail",args=[slice_id]))
     error_crud = ""
     serv = get_object_or_404(VTServer, id = server_id)
     slice = get_object_or_404(Slice, id = slice_id)
     virtualmachines = VM.objects.filter(sliceId=slice.uuid)
-
-    # Creates a model based on VM
-#    VMModelFormAux = modelformset_factory(
-#        VM, can_delete=False, form=VMModelForm,
-#        fields=["name", "memory","disc_image", "hdSetupType", "virtualizationSetupType"],
-#    )
-
     try:
         if request.method == "POST":
             if 'create_new_vms' in request.POST:
                 # "Done" pressed ==> send xml to AM
-#                formset = VMModelFormAux(request.POST, queryset=virtualmachines)
                 form = VMModelForm(request.POST)
-#                if formset.is_valid():
                 if form.is_valid():
                     instance = form.save(commit=False)
                     #create virtualmachines from received formulary
+                    print "questo e' l'ID"
+                    print instance.serverID
                     VMcontroller.processVMCreation(instance, serv.uuid, slice, request.user)
-#                    VMcontroller.processVMCreation(instances, serv.uuid, slice, request.user)
                     return HttpResponseRedirect(reverse("slice_detail",
                                                 args=[slice_id]))
                 # Form not valid => raise error
@@ -104,6 +177,43 @@ def virtualmachine_crud(request, slice_id, server_id):
                     ("Create VM in server %s" %serv.name, reverse("virtualmachine_crud", args=[slice_id, server_id])),
                 )
         })
+
+
+
+    
+def manage_vm_vslice(request, vslice_id, vm_name, action_type):
+
+    "Manages the actions executed over VMs at url manage resources."
+    print "000000000000000000000000000"
+    print vm_name
+    print action_type
+    vm1=VM.objects.raw("SELECT * FROM vt_plugin_vm AS t1 INNER JOIN (SELECT * FROM  resources_resource WHERE  module_name =  'vt_plugin.models.VM' AND name =  '"+vm_name+"') AS t2 ON t1.resource_ptr_id = t2.id AND t1.sliceId = ( SELECT uuid FROM vslice_vslice WHERE id = '"+vslice_id+"' LIMIT 1 ) ")[0] 
+    vm = VM.objects.get(id = vm1.id)
+    
+    #if action_type == 'stop' : action_type = 'hardStop'
+    rspec = XmlHelper.getSimpleActionSpecificQuery(action_type, vm.serverID)
+    Translator.PopulateNewAction(rspec.query.provisioning.action[0], vm)
+    ServiceThread.startMethodInNewThread(ProvisioningDispatcher.processProvisioning,rspec.query.provisioning, request.user)
+
+    #set temporally status
+    #vm.state = "on queue"
+    if action_type == 'start':
+        vm.state = 'starting...'
+    elif action_type == 'stop':
+        vm.state = 'stopping...'
+    elif action_type == 'reboot':
+        vm.state = 'rebooting...'
+    elif action_type == 'delete':
+        vm.state = 'deleting...'
+    elif action_type == 'create':
+        vm.state = 'creating...'
+    vm.save()
+    
+    #go to manage resources again
+    response = HttpResponse("")
+    return response
+
+
 
 def manage_vm(request, slice_id, vm_id, action_type):
 
@@ -178,6 +288,75 @@ def check_vms_status(request, slice_id):
     response = HttpResponse(data)
     return response
 
+from django.db import models
+class tempVm(models.Model):
+    id=models.IntegerField()
+    name=models.CharField(max_length=100)
+
+
+def check_vms_status_vslice(request, vslice_id):
+    from django.utils import simplejson
+    vmsId={}
+    vmsName={}
+    vmsStatus = {}
+    vmsActionsHtmlCodes = {}
+    vmsIP = {}
+    vslice = get_object_or_404(Vslice, id = vslice_id)
+    vt_aggs = \
+            vslice.aggregates.filter(
+                leaf_name=VtPlugin.__name__.lower())
+                
+    #vt_aggs=Aggregate.objects.raw('SELECT * FROM aggregate_aggregate as t1 INNER JOIN (SELECT * FROM `vt_plugin_vtplugin` WHERE client_id='+vslice_id+') as t2 ON t1.id=t2.aggregate_ptr_id')             
+
+
+    vt_aggs=Aggregate.objects.raw('SELECT t1.* FROM aggregate_aggregate as t1 INNER JOIN ( SELECT s1.* FROM `resources_resource` as s1 INNER JOIN (SELECT u1.* FROM vt_plugin_vtserver  as u1 INNER JOIN (SELECT * FROM vt_plugin_vm where sliceName="'+vslice.name+'" Limit 1) as u2 ON u1.uuid=u2.serverId) as s2  on s1.id=s2.resource_ptr_id ) as t2 ON t1.id=t2.aggregate_id')
+
+
+    #print ("SIZE VT_AGGS:" +str(len(vt_aggs)))
+    for agg in vt_aggs:
+        #print("EEEEEEEEEEEEEEEEEEEEEEEENTRATO")
+        for server in agg.resource_set.all():
+            #print("Altro for"+server.name)
+            if server.leaf_name == 'VTServer':
+                #print ("dentro all'if")
+                for vm in server.as_leaf_class().vms.all():
+                    if (vm.sliceId==vslice.uuid):
+                        #print ("vm dentro al server")
+                        vm_info=tempVm.objects.raw('SELECT id, name FROM resources_resource WHERE id =  "'+str(vm.id)+'"')[0]
+                        vmsName[str(vm.id)]= vm_info.name
+                        vmsId[str(vm.id)]= vm_info.id
+                        vmsStatus[str(vm.id)]= vm.state
+                        '''
+                        if vm.state == "running":
+                            actionsHtmlCode =\
+                            "<div>\
+                            <a href=\"#/\" onclick=\"handleVMaction("+str(slice.id)+","+str(vm.id)+",\'stop\')\">Stop</a> |\
+                            <a href=\"#/\" onclick=\"handleVMaction("+str(slice.id)+","+str(vm.id)+",\'reboot\')\">Reboot</a>\
+                            </div>"
+                        elif  vm.state == "created (stopped)" :
+                            actionsHtmlCode =\
+						                "<div>\
+                            <a href=\"#/\" onclick=\"handleVMaction("+str(slice.id)+","+str(vm.id)+",\'start\')\">Start</a> |\
+                            <a href=\"#/\" onclick=\"handleVMaction("+str(slice.id)+","+str(vm.id)+",\'delete\',\'"+str(vm.name)+"\')\">Delete</a>\
+                            </div>"
+                        elif vm.state == "stopped" :
+                            actionsHtmlCode =\
+                            "<div>\
+                            <a href=\"#/\" onclick=\"handleVMaction("+str(slice.id)+","+str(vm.id)+",\'start\')\">Start</a> |\
+                            <a href=\"#/\" onclick=\"handleVMaction("+str(slice.id)+","+str(vm.id)+",\'delete\',\'"+str(vm.name)+"\')\">Delete</a>\
+                            </div>"
+                        else:
+                            actionsHtmlCode = "<div><img src=\"/static/media/default/img/loading.gif\" align=\"absmiddle\"></div>"
+                        vmsActionsHtmlCodes[str(vm.id)] = actionsHtmlCode
+                        '''
+                        try:
+                            vmsIP[str(vm.id)]= vm.ifaces.get(isMgmt = True).ip
+                        except:
+                            pass
+        
+    data = simplejson.dumps({'id':vmsId, 'name':vmsName, 'status': vmsStatus, 'actions': vmsActionsHtmlCodes, 'ips': vmsIP,})
+    response = HttpResponse(data)
+    return response
 
 def startStopSlice(action,uuid):
 

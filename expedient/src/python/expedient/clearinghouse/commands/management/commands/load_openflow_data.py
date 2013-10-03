@@ -24,6 +24,8 @@ from urlparse import urlsplit, urlunsplit
 from expedient.clearinghouse.project.views import create_project_roles
 from django.contrib.auth.models import User
 from expedient.clearinghouse.slice.models import Slice
+from expedient.clearinghouse.slice.models import vSlice
+
 from expedient.common.permissions.shortcuts import give_permission_to
 from expedient.common.middleware import threadlocals
 

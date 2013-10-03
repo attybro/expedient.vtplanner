@@ -80,7 +80,8 @@ AUTH_LDAP_BIND_DN = "uid=changeMe,ou=admins,dc=fp7-ofelia,dc=eu"
 #
 # Days until each slice expires.
 #
-SLICE_DEFAULT_EXPIRATION_TIME = 30
+SLICE_DEFAULT_EXPIRATION_TIME  = 30
+VSLICE_DEFAULT_EXPIRATION_TIME = 30
 
 ##
 ## Theme Manager 

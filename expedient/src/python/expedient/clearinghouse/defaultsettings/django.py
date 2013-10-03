@@ -177,6 +177,7 @@ INSTALLED_APPS = [
     'expedient.clearinghouse.project',
     'expedient.clearinghouse.resources',
     'expedient.clearinghouse.slice',
+    'expedient.clearinghouse.vslice',
     'expedient.clearinghouse.users',
     'expedient.clearinghouse.permissionmgmt',
 #    'openflow.plugin',

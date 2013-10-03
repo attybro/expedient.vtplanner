@@ -60,7 +60,12 @@ class VM(Resource):
     class Meta:
         """Meta Class for your model."""
         app_label = 'vt_plugin'
+        
+    def setDiscImage(self,disc_image):
+        self.disc_image = disc_image
 
+    def getDiscImage(self):
+        return self.disc_image
 
     def setMemory(self,memory):
         self.memory = memory

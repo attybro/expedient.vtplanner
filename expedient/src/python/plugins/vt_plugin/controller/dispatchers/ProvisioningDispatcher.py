@@ -21,11 +21,15 @@ class ProvisioningDispatcher():
     def processProvisioning(provisioning):
 
         #go through all actions in provisioning class
+        print ("processProvisioning")
         for action in provisioning.action:
             #translate action to actionModel
             actionModel = Translator.ActionToModel(action,"provisioning")
             actionModel.requestUser = threading.currentThread().requestUser
+            print ("action che ho io: ")
+            print (actionModel.type)
             if actionModel.type == "create":
+                print("CCCCCCCCCCCCCCCCREATE")
                 if Action.objects.filter (uuid = actionModel.uuid):
                     #if action already exists we raise exception. It shouldn't exist because it is create action!
                     try:
@@ -40,6 +44,27 @@ class ProvisioningDispatcher():
                 try:
                     Server = VTServer.objects.get(uuid =  action.server.uuid)
                     VMmodel = Translator.VMtoModel(action.server.virtual_machines[0], Server.aggregate_id, "save")
+                    print ("++++++++++++++++++inizio+++++++++++++++++++")
+                    print Server.aggregate_id
+                    print VMmodel.getName()
+                    print VMmodel.getState()
+                    print VMmodel.getUUID()
+                    print VMmodel.getProjectId()
+                    print VMmodel.getProjectName()
+                    print VMmodel.getSliceId()
+                    print VMmodel.getSliceName()
+                    print VMmodel.getOStype()
+                    print VMmodel.getOSversion()
+                    print VMmodel.getOSdist()
+                    print VMmodel.getVirtTech()
+                    print VMmodel.getServerID()
+                    print VMmodel.getHDsetupType()
+                    print VMmodel.getHDoriginPath()
+                    print VMmodel.getVirtualizationSetupType()
+                    print VMmodel.getMemory()
+
+
+                    print ("+++++++++++++++++++fine++++++++++++++++++++")
                     Server.vms.add(VMmodel)
                     actionModel.vm = VMmodel
                     actionModel.save()
@@ -96,6 +121,7 @@ class ProvisioningDispatcher():
                     Server = VTServer.objects.get(uuid = VMmodel.getServerID() )
                     client = Server.aggregate.as_leaf_class().client
                     ProvisioningDispatcher.connectAndSend('https://'+client.username+':'+client.password+'@'+client.url[8:], action, client) 
+                    #VMmodel.completeDelete()
                 except:
                     logging.error("Could not connect to AM")
                     logging.error(e)
@@ -146,10 +172,20 @@ class ProvisioningDispatcher():
 
     @staticmethod
     def connectAndSend(URL, action, client):
+        print "connect and send"
+        print client.username
+        print client.password
+        print SITE_IP_ADDR
+        print URL
+        print "----------action------------------"
+        print action
         try:
             vt_manager = xmlrpclib.Server(URL)
             PLUGIN_URL = 'https://'+client.username+':'+client.password+'@'+SITE_IP_ADDR+'/vt_plugin/xmlrpc/vt_am/'
+            print PLUGIN_URL
+            print "send"
             vt_manager.send(PLUGIN_URL, XmlHelper.craftXmlClass(XmlHelper.getSimpleActionQuery(action)))
+            print "sent"
         except Exception as e:
             logging.error("Exception connecting to VT Manager")
             logging.error(e)

@@ -59,6 +59,7 @@ class ProvisioningResponseDispatcher():
                         actionModel.vm.setState('stopped')
                         actionModel.vm.save()
                     elif actionModel.type == 'delete':
+                        print ("Now delete.... from Provisioning Resopnse Dispatchers")
                         actionModel.vm.completeDelete()
 
                     if actionModel.description == None: 

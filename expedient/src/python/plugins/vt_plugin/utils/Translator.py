@@ -133,8 +133,10 @@ class Translator():
         actionModel = Action()
         actionModel.hyperaction = hyperaction
         if not action.status:
+            print("Metti lo stato dell'azione a QUEUED")
             actionModel.status = 'QUEUED'
         else:
+            print("Setta lo stato dell'azione ad un altro stato")
             actionModel.status = action.status
         #actionModel.callBackUrl = callBackUrl
 

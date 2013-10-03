@@ -110,7 +110,16 @@ No information available.
             target_obj_or_class=self,
         )
     slice_set = property(_get_slice_set)
-        
+ 
+    def _get_vslice_set(self):
+        """Gets the list of slices allowed to use the aggregate"""
+        from expedient.clearinghouse.vslice.models import Vslice
+        return Permittee.objects.filter_for_class_and_permission_name(
+            klass=Vslice,
+            permission="can_use_aggregate",
+            target_obj_or_class=self,
+        )
+    vslice_set = property(_get_vslice_set)       
         
     def check_status(self):
         """Checks whether the aggregate is available or not.
@@ -245,6 +254,13 @@ No information available.
                     pass
                 # Carolina: remove permision for aggregate in every slice inside the project
                 self.remove_from_slice(slice, next)
+            for vslice in project.vslice_set.all():
+                try:
+                    self.as_leaf_class().stop_vslice(vslice)
+                except:
+                    pass
+                # Carolina: remove permision for aggregate in every slice inside the project
+                self.remove_from_vslice(vslice, next)    
             delete_permission("can_use_aggregate", self.as_leaf_class(), project)
             return next
         
@@ -264,6 +280,25 @@ No information available.
             give_permission_to("can_use_aggregate", self.as_leaf_class(), slice)
             return next
 
+    def add_to_vslice(self, vslice, next):
+        """
+        Works exactly the same as L{add_to_project} but for a slice.
+        """
+        
+        #must_have_permission("user", self.as_leaf_class(), "can_use_aggregate")
+        #must_have_permission("project", self.as_leaf_class(), "can_use_aggregate")
+        
+        prefix = self.__class__.get_url_name_prefix()
+        try:
+            return reverse("%s_aggregate_vslice_add" % prefix,
+                           kwargs={'agg_id': self.id,
+                                   'vslice_id': vslice.id})+"?next=%s" % next
+        except NoReverseMatch:
+            give_permission_to("can_use_aggregate", self.as_leaf_class(), vslice)
+            return next
+
+
+
     def add_controller_to_slice(self, slice, next):
         """
         Works exactly the same as L{add_to_project} but for a slice.
@@ -278,6 +313,28 @@ No information available.
                                    'slice_id': slice.id})+"?next=%s" % next
         except NoReverseMatch:
             give_permission_to("can_use_aggregate", self.as_leaf_class(), slice)
+            return next
+
+    def remove_from_vslice(self, slice, next):
+        """
+        Works exactly the same as L{remove_from_project} but for a slice.
+        It stops the slice if not overridden. Subclasses should stop the
+        slice before removing the permission.
+        """
+        must_have_permission("user", self.as_leaf_class(), "can_use_aggregate")
+        must_have_permission("project", self.as_leaf_class(), "can_use_aggregate")
+
+        prefix = self.__class__.get_url_name_prefix()
+        try:
+            return reverse("%s_aggregate_slice_remove" % prefix,
+                           kwargs={'agg_id': self.id,
+                                   'slice_id': vslice.id})+"?next=%s" % next
+        except NoReverseMatch:
+            try:
+                self.as_leaf_class().stop_vslice(vslice)
+            except:
+                pass
+            delete_permission("can_use_aggregate", self.as_leaf_class(), vslice)
             return next
 
 
@@ -330,6 +387,18 @@ No information available.
             delete_permission("can_use_aggregate", self.as_leaf_class(), user)
             return next
 
+    def start_vslice(self, vslice):
+        """Start the slice in the actual resources.
+        
+        Subclasses overriding this method should call the parent class
+        to ensure permission checks.
+        """
+        must_have_permission("user", self.as_leaf_class(), "can_use_aggregate")
+        must_have_permission("project", self.as_leaf_class(), "can_use_aggregate")
+        must_have_permission("vslice", self.as_leaf_class(), "can_use_aggregate")
+        pass
+
+
     def start_slice(self, slice):
         """Start the slice in the actual resources.
         
@@ -339,6 +408,24 @@ No information available.
         must_have_permission("user", self.as_leaf_class(), "can_use_aggregate")
         must_have_permission("project", self.as_leaf_class(), "can_use_aggregate")
         must_have_permission("slice", self.as_leaf_class(), "can_use_aggregate")
+        pass
+
+    def stop_vslice(self, vslice):
+        """Take out the resource reservation from the aggregates.
+
+        Subclasses overriding this method should call the parent class
+        to ensure permission checks.
+        """
+        user = get_permittee_from_threadlocals("user")
+        can_use = has_permission(
+            user, self.as_leaf_class(), "can_use_aggregate")
+        can_edit = has_permission(
+            user, self.as_leaf_class(), "can_edit_aggregate")
+        if not can_use and not can_edit:
+            raise PermissionDenied(
+                "can_use_aggregate",
+                self.as_leaf_class(),
+                user, allow_redirect=False)
         pass
     
     def stop_slice(self, slice):

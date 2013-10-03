@@ -84,6 +84,7 @@ def run():
         force=True,
     )
     
+    
     create_permission(
         "can_stop_slices",
         description=\
@@ -99,7 +100,48 @@ def run():
         view=make_request,
         force=True,
     )
+
+    create_permission(
+        "can_create_vslices",
+        description=\
+            "Owners of this permission can create new vslices.",
+        view=make_request,
+        force=True,
+    )
     
+    create_permission(
+        "can_edit_vslices",
+        description=\
+            "Owners of this permission can modify existing vslices.",
+        view=make_request,
+        force=True,
+    )
+    
+    create_permission(
+        "can_delete_vslices",
+        description=\
+            "Owners of this permission can delete existing vslices.",
+        view=make_request,
+        force=True,
+    )
+    
+    
+    create_permission(
+        "can_stop_vslices",
+        description=\
+            "Owners of this permission can start vslices.",
+        view=make_request,
+        force=True,
+    )
+    
+    create_permission(
+        "can_start_vslices",
+        description=\
+            "Owners of this permission can stop slices.",
+        view=make_request,
+        force=True,
+    )
+
     create_permission(
         "can_add_aggregates",
         description=\
@@ -135,3 +177,12 @@ def run():
         view=make_request,
         force=True,
     )
+    
+    create_permission(
+        "can_delete_vslices",
+        description=\
+            "Owners of this permission can delete existing vslices.",
+        view=make_request,
+        force=True,
+    )
+    

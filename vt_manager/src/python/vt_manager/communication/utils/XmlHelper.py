@@ -47,11 +47,14 @@ class XmlCrafter(object):
         print "Crafting Model..."
         try:
             xml = StringIO()
+            print xml
+            print XMLclass
             xml.write('<?xml version="1.0" encoding="UTF-8"?>\n')
             XMLclass.export(xml, level=0)
             print "Crafting of the XML Class concluded without significant errors."
             xmlString = xml.getvalue()
             xml.close()
+            print xmlString
             return xmlString
         except Exception as e:
             #TODO: add more info

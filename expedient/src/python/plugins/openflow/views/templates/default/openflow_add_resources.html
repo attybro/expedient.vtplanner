@@ -81,7 +81,8 @@
 
 {# OPENFLOW #}
 {% for agg in openflow_aggs %}
-<table><tr>
+<table>	
+<tr>
 <td>
   <h2><a id="ofam_{{agg.id}}" class="expandableTooltipable expandableCtl" ref="#/">&bull; OpenFlow Aggregate: {{ agg.name }} <span class="opened">&#x25B2;</span></a>
   </h2>
@@ -321,6 +322,94 @@
 {% empty %}
   <!--<p>There are no OpenFlow aggregates in the slice. </p>-->
 {% endfor %}
+
+
+
+
+
+
+{# OPENFLOW VTPLANNER #}
+{%if vtplanner_aggregate.count%}
+{% for agg in vtplanner_aggregate %}
+<table>	
+<tr>
+<td>
+  <h2><a id="ofam_{{agg.id}}" class="expandableTooltipable expandableCtl" ref="#/">&bull; OpenFlow Aggregate: {{ agg.name }} <span class="opened">&#x25B2;</span></a>
+  </h2>
+</td>
+<td> </td>
+</tr></table>
+<div id="ofam_{{agg.id}}Container" class="aggregateManager expandable" >
+	<table class="aggregateManagerDetail">
+	<tr>
+	<td class="label">Name:</td>
+	<td> <b>{{ agg.name }}</b></td>
+	</tr>
+	<tr>
+	
+	<tr>
+	<td class="label">Status:</td>
+	<td>			{% if not agg.available %}
+				<img src="{% url img_media 'inactive.png' %}" alt="Temporally not reachable" title="Temporally not reachable" style="height:1.2em"> 
+				{%else%}
+				<img src="{% url img_media 'active.png' %}" title="Ready" alt="Ready" style="height:1.2em"> 
+				{% endif %}
+	</tr>
+	<tr>
+	<td class="label">Physical location:</td>
+	<td> <b>{{ agg.location }}</b></td>
+	</tr>	
+	<tr>
+	<td colspan="2">
+
+
+
+   <br><br>
+   </div>
+   </td>
+   </tr>
+  {#Actions#}
+  {# {% if openflow_aggs or planetlab_aggs %} #}
+  {% if agg.available %}
+    <tr>
+	<td class="label" width="150px">Actions:</td>
+	<td>
+    	
+    {# {% else %} #}
+		<!--<input type="button" onClick="alert('Warning: OF Aggregate \'{{ agg.name }}\' is not available');" value="Book Openflow resources" />-->
+  {# {% endif %} #}
+  	</td>
+  </tr>
+  {% endif %}
+
+  <!--Remove AM-->
+  {% if agg.available %}
+    <tr>
+        <td class="label" width="150px">Remove from slice:</td>
+        <td>
+            <form name="vslice_remove_agg_{{ vslice.id }}_{{ agg.id }}" method="POST" action="{% url vslice_remove_agg slice.id agg.id %}" onsubmit="javascript: return confirm('Are you sure you want to remove AM \'{{ agg.name }}\' from slice \'{{ vslice.name }}\'?');">{% csrf_token %}
+                    <input type="submit" value="Remove AM" />
+            </form>
+        </td>
+  </tr>
+  {% endif %}
+
+  {% if not agg.available %}
+  <tr>
+      <td colspan="3">
+          <p style="font-size:10px">
+              <img style="height:12px;" src="{% url img_media 'inactive.png' %}" alt="AM is not available" title="AM is not available">
+              AM is not available: resources cannot be booked neither can this AM be removed from this slice.
+          </p>
+      </td>
+  </tr>
+  {% endif %}
+  </table>
+
+
+{% endfor %}
+{% endif %}
+
 
 
 {% endblock content %}
