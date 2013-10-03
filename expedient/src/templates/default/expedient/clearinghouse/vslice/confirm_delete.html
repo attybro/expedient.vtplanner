@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% load breadcrumbs %}
+
+{% block content %}
+<div class="main">
+    <p>
+        <h2>Are you sure you want to delete the virtual slice 
+        "{{ object.name }}"?</h2>
+    </p>
+    <form action="" method="post">{% csrf_token %}
+    <div>
+        <input type="hidden" name="post" value="yes" />
+        <input type="submit" value="Yes, I'm sure" />
+        <input type="button" value="Cancel" onclick="document.location='{% last_link breadcrumbs %}'" />
+    </div>
+    </form>
+</div>
+{% endblock %}

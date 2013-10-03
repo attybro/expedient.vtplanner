@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/PR-SVG-20010719/DTD/svg10.dtd">
+<svg width="20cm" height="13cm" viewBox="240 169 381 254" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <g>
+    <path style="fill: #c9c9b6" d="M 240.937 227.798 L 303.105,170 L 621.292,170 L 559.124,227.798 L 240.937,227.798z"/>
+    <path style="fill: none; fill-opacity:0; stroke-width: 0.02; stroke: #494936" d="M 240.937 227.798 L 303.039,170 L 621.16,170 L 559.124,227.798 L 240.937,227.798 L 240.937,227.798"/>
+    <path style="fill: #b7b79d" d="M 240.937 227.798 L 559.124,227.798 L 559.124,423.04 L 240.937,423.04 L 240.937,227.798z"/>
+    <path style="fill: none; fill-opacity:0; stroke-width: 0.02; stroke: #494936" d="M 240.937 227.798 L 559.124,227.798 L 559.124,423.04 L 240.937,423.04 L 240.937,227.798"/>
+    <path style="fill: #7a7a5a" d="M 559.124 423.04 L 621.292,361.601 L 621.292,170 L 559.124,227.798 L 559.124,423.04z"/>
+    <path style="fill: none; fill-opacity:0; stroke-width: 0.02; stroke: #494936" d="M 559.124 423.04 L 621.292,361.601 L 621.292,170 L 621.16,170 L 559.124,227.798 L 559.124,423.04 L 559.124,423.04"/>
+  </g>
+  <text font-size="159.998" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="278.101" y="381.971">
+    <tspan x="278.101" y="381.971">VM</tspan>
+  </text>
+</svg>

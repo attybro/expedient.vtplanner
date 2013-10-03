@@ -1,0 +1,255 @@
+<h2>
+	<a id="topology" class="expandableTooltipable expandableCtl" ref="#/">
+		Topology <span class="opened"> &#x25B2;</span>
+	</a>
+</h2>
+
+
+<script src="{% url js_media 'tooltip.topology.js' %}"></script>
+<script src="{% url js_media 'd3.v2.min.js' %}"></script>
+<link rel="stylesheet" type="text/css" href="{% url css_media 'tooltip.topology.css' %}" />
+<link rel="stylesheet" type="text/css" href="{% url css_media 'tooltip.css' %}" />
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css" />
+<script src="https://code.jquery.com/jquery-1.9.1.js"></script>
+<script src="https://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
+
+<style>
+  .link {
+    stroke: #ccc;
+    stroke-width:3px;
+  }
+  
+  .node {
+    stroke-width:2px;
+  }
+  .node text {
+    pointer-events: none;
+    font: 10px sans-serif;
+  }
+</style>
+
+{#Render#}
+<div id="topologyContainer" class="expandable" style="border:1px solid #CCCCCC;padding:0px;overflow:hidden;margin-bottom:20px;">
+  <div id="selected_node_info" style="height:14px;background-color:#DDDDDD;">
+    Tip: Move cursor over the icons to get extra information...
+  </div>
+{% if aggregate_on = 0 %}
+  <a href="#addAggregate">
+
+    <div style="position:relative; top:200px; width:740px;color=black;">
+      <center>Warning no Virtual topology planner added to the slice: {{ vslice.name }}.<br>Add an aggregate to the slice.</center>
+    </div>
+
+  </a>
+{% endif %}
+  <div id="target"></div>
+ 
+  <script> var xmlFile</script></script>
+  <script src="{% url js_media 'force_view.js' %}"></script>
+  <input id='checkButton' type="button" value="Check Avaialability!" onClick="firstCheck()"/>
+  <input id='provision' type="button" value="Provision"  style="display:none" onClick="provision()" />
+  <input id='getButton' type="button" value="Get Resources"  style="display:none" onClick="getResource()" />
+  <input id='freeButton' type="button" value="Free Resources" style="display:none" onClick="freeResource()" />
+  <!--<input id='addAggreg' type="button" value=""  onClick="addVtam()" />-->
+  <!--<input id='addAggreg' type="button" value="addVTAM"  onClick="addVtam()" />-->
+
+
+<script>
+	
+function checkLength( o, n, min, max ) {
+	if ( o.length > max || o.length < min ) {
+		return false;
+	} 
+	else {
+		return true;
+	}
+}	
+	
+	
+function openMe(obj) {
+	$("#dialog").text(obj);
+	$("#dialog").dialog();
+};
+
+	function popUpSwitch(selected, nodeList) {			
+			for (i=0; i<node[0].length; i++){
+				if (selected=nodeList[0][i].attributes.title){
+					console.log(d3.select(node[0]))
+					$( "#dp_id" ).val(d3.select(node[0][i]).attr("title"));
+					$( "#switchType" ).val("medium");
+					$( "#tableSize" ).val("hw");
+
+					break;
+					}
+				}
+			field1txt= $( "#dp_id" ).val()
+			$( "#switchFormDiv" ).dialog(
+			{
+				autoOpen: true,
+				modal: true,
+				buttons: {
+				  "Save switch": function() {
+					console.log(field1txt)
+					console.log(selected);
+					for (i=0; i<node[0].length; i++){
+						if (selected=nodeList[0][i].attributes.title){
+							//Qua devo modificare il rispettivo node
+							//d3.select(node[0][i]).attr("title", "pippo")
+							break
+						}
+					}
+					$( this ).dialog( "close" );
+
+				  },
+				  Exit: function() {
+					$( this ).dialog( "close" );
+				  }
+				},
+			}
+			);
+	}
+	
+		function popUpVm(selected) {			
+			for (i=0; i<node[0].length; i++){
+				if (selected=node[0][i].attributes.title){
+					console.log(d3.select(node[0]))
+					$( "#name" ).val(d3.select(node[0][i]).attr("title"));
+					$( "#memory" ).val($( "#memory" ).val());
+					$( "#diskImage" ).val($( "#diskImage" ).val());
+					$( "#virtualization" ).val($( "#virtualization" ).val());
+					$( "#hdType" ).val($( "#hdType" ).val());
+					break;
+					}
+				}
+			$( "#vmFormDiv" ).dialog(
+			{
+				autoOpen: true,
+				modal: true,
+				buttons: {
+				  "Save virtual machine": function() {
+					for (i=0; i<node[0].length; i++){
+						if (selected=node[0][i].attributes.title){
+							//Qua devo modificare il rispettivo node
+							d3.select(node[0][i]).attr("name", $( "#name" ).val())
+							d3.select(node[0][i]).attr("memory", $( "#memory" ).val())
+							d3.select(node[0][i]).attr("diskImage", $( "#diskImage" ).val())
+							d3.select(node[0][i]).attr("virtualization", $( "#virtualization" ).val())
+							d3.select(node[0][i]).attr("hdType", $( "#hdType" ).val())
+							break
+						}
+					}
+					$( this ).dialog( "close" );
+
+				  },
+				  Exit: function() {
+					$( this ).dialog( "close" );
+				  }
+				},
+			}
+			);
+	}
+
+		function popUpLink(selected) {
+			$( "#bw" ).val($( "#bw" ).val());	
+			
+			$( "#linkFormDiv" ).dialog(
+			{
+				autoOpen: true,
+				modal: true,
+				buttons: {
+				  "Save virtual machine": function() {
+				srcX=selected.source.x
+				srcY=selected.source.y
+				dstX=selected.target.x
+				dstY=selected.target.y
+				for (i=0; i<link[0].length; i++){
+					if (srcX==d3.select(link[0][i]).attr("x1")  && dstX==d3.select(link[0][i]).attr("x2")){
+						console.log("YeppppppppppppppppppppppppppppppppppppppppppPPPP!")
+						d3.select(node[0][i]).attr("virtualization", $( "#virtualization" ).val())
+
+						d3.select(link[0][i]).attr("bw", $( "#bw" ).val())
+						break;
+						}
+					}
+				$( this ).dialog( "close" );
+
+				 },
+				  Exit: function() {
+					$( this ).dialog( "close" );
+				  }
+				},
+			}
+			);	
+	}
+	
+
+</script>
+
+<div id="dialog" class="dialog" title="Basic dialog" hidden>
+</div>
+
+</div>
+
+<div id="switchFormDiv" title="switchFormDiv" hidden>
+ <form id="switchForm">
+   <fieldset>
+	<label for="dp_id">DataPath ID:</label>
+	<input type="text" name="dp_id" id="dp_id" class="text ui-widget-content ui-corner-all"  readonly="readonly"/>
+	<br><label for="tableSize">Table Size: </label>
+	<input type="text" name="tableSize" id="tableSize" value="" class="text ui-widget-content ui-corner-all" readonly="readonly"/>
+	<br><label for="switchType">Switch Type:</label>
+	<input type="text" name="switchType" id="switchType" value="" class="text ui-widget-content ui-corner-all" readonly="readonly"/>
+   </fieldset>
+ </form>
+</div>
+
+
+<div id="vmFormDiv" title="vmFormDiv" hidden>
+ <form id="vmForm">
+   <fieldset>
+	<label for="name">Name:</label>
+	<input type="text" name="name" id="name" class="text ui-widget-content ui-corner-all"  readonly="readonly" />
+	<label for="memory">Memory:</label>
+	<select id="memory">
+		<option value="1G">1G</option>
+		<option value="2G">2G</option>
+	</select><br>
+	
+	<label for="diskImage">Disk Image:</label>
+		<select id="diskImage">
+		<option value="high">high</option>
+		<option value="medium">medium</option>
+		<option value="low">low</option>
+	</select> 
+
+	<label for="virtualization">Virtualization:</label>
+	<select id="virtualization">
+		<option value="real">reak</option>
+		<option value="fake">fake</option>
+	</select> 
+		
+	<br><label for="hdType">Hard Disk Type:</label>
+	<select id="hdType">
+		<option value="512K">512K</option>
+		<option value="1024K">1024K</option>
+	</select> 
+	
+   </fieldset>
+ </form>
+</div>
+
+
+<div id="linkFormDiv" title="linkFormDiv" hidden>
+ <form id="linkForm">
+   <fieldset>
+	<label for="bw">Bandwidth</label>
+	<select id="bw">
+		<option value="10M">10M</option>
+		<option value="100M">100M</option>
+		<option value="1G">1G</option>
+	</select> 
+   </fieldset>
+ </form>
+</div>
+
+

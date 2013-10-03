@@ -1,0 +1,588 @@
+g{% extends "base.html" %}
+{% load ch_extras %}
+{% load breadcrumbs %}
+
+{% block title %} Virtual Slice {{ vslice.name }} in Project {{ vslice.project.name }}{% endblock title %}
+
+{% block head %}
+<style>
+	#resources_table {
+	    width: 100%;
+	}
+	#resource_list {
+	    width: 100%;
+	}
+	.table_div td,th {
+	    text-align: center;
+	}
+</style>
+<script src="{% url js_media 'jquery.blockUI.js' %}"></script>
+
+<script>
+var VTAMID={{ vtamid }}
+
+
+        function getLoadingMsg(action) {
+            var grantedFlowspace = 0;
+            if ($("[id^=grantedFlowspace][id$=Container]").length > 0 || 
+                $(".grantedFlowspaceHeader").length > 0) {
+                    grantedFlowspace = 1;
+                }
+
+            var flowspaceWarning = 'confirmWrapper("';
+            if (action == "start_update") {
+                {% if vslice.started %}
+                    if (grantedFlowspace) {
+                        flowspaceWarning += "Updating";
+                    }
+                {% else %}
+                    return eval('showLoadingMsg("Loading...");');
+                {% endif %}
+            } else if (action == "stop") {
+                if (grantedFlowspace) {
+                    flowspaceWarning += "Stopping";
+                }
+            }
+            if (grantedFlowspace) {
+                flowspaceWarning += ' the vslice will cause all granted flowspaces to be deleted in the Flowvisor, and require approval for new requests. Are you sure you want to ' + action + ' the vslice?");';
+                return eval(flowspaceWarning);
+            } else {
+                return eval('showLoadingMsg("Loading...");');
+            }
+        }
+
+	function showLoadingMsg(message){
+		//TODO:Show message
+		 $.blockUI({ css: { 
+		            border: 'none', 
+		            padding: '15px', 
+       			    backgroundColor: '#000', 
+                	 	'-webkit-border-radius': '10px', 
+                		'-moz-border-radius': '10px', 
+ 	       	            opacity: .5, 
+         		    color: '#fff' 
+        		} });
+	}
+	function confirmWrapper(message){
+		value = confirm(message);
+		if (value){
+			showLoadingMsg("Loading...");
+		}
+		return value;
+	}
+	$(document).ready(function() {
+		$("#aggs_help_img").tooltip({
+			tip: "#aggs_help_div"
+		});
+		$(".expandableTooltipable").tooltip({
+			tip: "#expandableHelp"
+		});
+	});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="main">
+	<div class="title">
+		<h1>Virtual Slice <font class="highlight">{{ vslice.name }}</font> in Project <font class="highlight">{{ vslice.project.name }}</font></h1>
+	</div>
+
+		<div class="slicemgmt_actions">
+	   	<table width="100%" id="slicemgmt_table">
+			<tr>
+				<th><h2>Virtual Slice status</h2></th>
+				<th><h2>Description</h2></th>
+				<th><h2>Management</h2></th>
+			</tr>
+			<tr>
+			<td style="text-align:center">
+				{% if not vslice.started %}
+					<img src="{% url img_media 'inactive.png' %}" alt="VSlice not started" title="VSlice not started">
+				{%else%}
+					{% if not vslice.modified %}
+					<img src="{% url img_media 'active.png' %}" title="VSlice started and up-to-date" alt="VSlice started and up-to-date">
+					{% else %}
+						<img src="{% url img_media 'warning.png' %}" title="VSlice started, but not up-to-date. Update Vslice." alt="Vslice started, but not up-to-date. Update vslice.">
+					{% endif %}
+				{% endif %}
+
+			</td>
+			<td width="57%" style="font-size:11px;vertical-align:top">
+		        <i>{{ vslice.description }}</i>
+
+			<!--		XXX:Expiration method needs review
+		        <h2>Expires:</h2>
+		        {{ slice.expiration_date }}-->
+	   		</td>
+			<td width="27%">
+		    	<a href="{% url vslice_update vslice.id %}">Edit</a> vslice basic information.<br>
+		    	<a href="{% url vslice_delete vslice.id %}">Delete</a> vslice.
+				<table style="margin-top:5px;">
+	    			<tr>
+	    				<td>
+				    		<form action="{% url vslice_start vslice.id %}" method="POST">{% csrf_token %}
+
+			    			</form>
+			    		</td>
+			    		<td>
+				    		<form action="{% url vslice_stop vslice.id %}" method="POST">{% csrf_token %}
+		
+				    		</form>
+		    			</td>
+		    		</tr>
+			    	</table>
+			</td>
+			</tr>
+			</table>
+			
+		</div>
+		<!-- mgmt actions -->
+
+    </div> 
+    <!-- detail section -->
+{# Topology #}
+{% include "vslice/topology.html" %}
+
+{# List of aggregates #}
+{% if not aggregate_on %}
+    <div class="detail_section">
+	    <h1> Virtual Slice AMs and resource details 
+                        <img id="aggs_help_img" src="{% url img_media 'question_mark_15x15.png' %}" />
+                </h1>
+		<center>
+		<div id="addAggregate" class="button" onclick='document.location="{% url vslice_add_agg vslice.id %}"'> 
+		<a href="#/" class="noMouseOver"><span style="font-size:25px;font-weight:bold;vertical-align:middle">+</span><span style="vertical-align:middle"> Add an Agregate Manager to the current virtual vslice</span></a>
+		</div>
+		</center>
+
+                <div class="tooltip" id="aggs_help_div">
+                        Below you can manage and add aggregates in your virtual vslice. You can
+                        only add resources to your virtual vslice from aggregates that have been
+                        added to the virtual vslice. When you add an aggregate to the virtual vslice you
+                        might be prompted for additional information that the aggregate
+                        needs about your virtula vslice.
+                </div>
+        </div>
+{% endif%}
+{# Show message when no aggregates are added to the vslice #}
+{% with vslice.aggregates.all as aggregate_list %}
+    {% if not aggregate_list.count %}
+        <center>
+            <p style="font-size:12px;margin-bottom:65px;width:400px;">
+                This virtual vslice has no aggregates added to it. To be able to reserve
+                resources on aggregates, you shall add aggregates first ...
+            </p>
+	</center>
+    {% else %}
+        <!-- Common expandable tooltip -->
+        <div class="tooltip" id="expandableHelp" style="font-size:normal"> Click on the arrow to expand/collapse</div>
+
+        {# Begin: Aggregate details - loads templates from plugins - partial templates #}
+        {% if plugin_template_list_computation %}
+          <h2 class="resourcesh2">
+            <a id="computationalResources" class="expandableTooltipable expandableCtl resourcesh2" ref="#/">
+              Computational resources
+              <span class="opened">&#x25B2;</span>
+            </a>
+          </h2>
+          <div id="computationalResourcesContainer" class="expandable">
+			  <div id="resourceTable"class="aggregateManager expandable">
+
+			  </div>
+		</div>
+
+		  <!-- le virgolette vanno sostituite dalle grafe col percento-->
+          <!-- '''for plugin_addresources in plugin_template_list_computation ''' ''' include plugin_addresources ''' '''endfor ''' -->
+        {% endif %}
+        
+        
+        {% if plugin_template_list_network %}
+          <h2 class="resourcesh2">
+            <a id="networkResources" class="expandableTooltipable expandableCtl resourcesh2" ref="#/">
+              Network resources
+              <span class="opened">&#x25B2;</span>
+            </a>
+          </h2>
+          <div id="networkResourcesContainer" class="expandable">
+          {% for plugin_addresources in plugin_template_list_network %}
+            {% include plugin_addresources %}
+          {% endfor %}
+          </div>
+        {% endif %}
+
+
+
+        {# End: Aggregate details #}
+    {% endif %}
+{% endwith %}
+
+
+<!--<form action="/vslice/contact/4/" method="post">{% csrf_token %}
+<p><label for="id_subject">Subject:</label>
+    <input id="id_subject" type="text" name="id_subject"/></p>
+<p><label for="available">available:</label>
+    <input id="available" type="text" name="available" value=0></p>
+<input type="submit" value="Check" />
+-->
+
+console.log({{vtamid}})
+<script type="text/javascript">
+function checkAvailability(xmlData) {
+	pathname = window.location.pathname;	
+	URL=pathname.replace("detail", "checkAv");	
+	$.ajax({
+		type: "POST",
+		async:false,
+		url: URL,
+		data : {csrfmiddlewaretoken: document.getElementsByName('csrfmiddlewaretoken')[0].value, xml: xmlData, vSliceName: '{{ vslice.name }}', vtplanner_url: '{{vtplanner_url}}', vtplanner_username: '{{vtplanner_username}}', vtplanner_password: '{{vtplanner_password}}'},
+		success: function(msg){
+			//alert(msg);
+			getResource();
+			$("#checkButton").hide();
+			$("#freeButton").show();
+			},
+		});	
+}
+	
+
+
+	
+function getResource() {
+	//URL="/vslice/getRes/"+1+"/";
+	pathname = window.location.pathname;	
+	URL=pathname.replace("detail", "getRes");	
+	$.ajax({
+		type: "POST",
+		url: URL,
+		async:false,
+		data : {csrfmiddlewaretoken: document.getElementsByName('csrfmiddlewaretoken')[0].value, xml: "xmlData", vSliceName: '{{ vslice.name }}', vtplanner_url: '{{vtplanner_url}}', vtplanner_username: '{{vtplanner_username}}', vtplanner_password: '{{vtplanner_password}}' },
+		success: function(msg){
+			console.log(msg.length)
+			if (msg.length>2){
+			redrawFromJson(msg)
+			
+			writeDiv(obj)
+			//console.log("Oggettooooooo")
+			//console.log(obj)
+			$("#checkButton").hide();
+			$("#freeButton").show();
+			}
+
+			},
+		});		
+}
+
+
+function provision(){
+    alert ("Provision this:\nname: "+vmName+'\n'+     "vsliceId:"+vsliceId+'\n')
+}//end startVM
+
+function freeResource() {
+	pathname = window.location.pathname;	
+	URL=pathname.replace("detail", "freeRes");
+	alert("Libera")	
+	$.ajax({
+		type: "POST",
+		url: URL,
+		async:false,
+		data : {csrfmiddlewaretoken: document.getElementsByName('csrfmiddlewaretoken')[0].value, xml: "xmlData", vSliceName: '{{ vslice.name }}', vtplanner_url: '{{vtplanner_url}}', vtplanner_username: '{{vtplanner_username}}', vtplanner_password: '{{vtplanner_password}}' },
+		success: function(msg){
+		  console.log("Fatta");
+		  console.log(msg);
+			},
+    error: function(){
+      console.log('failure');
+      console.log(msg);
+      }
+		});
+		  location.reload(); 
+		  $("#checkButton").show();
+		  $("#provision").show();
+		  $("#getButton").show();
+	    $("#freeButton").show();	
+	}
+
+function createVM(name_, dpid, memory, cpu_frequency, cpus_number){
+		$.getJSON("/vslice/aggregates/add_aggregate_vtam/{{ vslice.id }}/{{ vtamid }}/");
+		//alert("name: "+name_+'\n'+     "dpid:"+dpid+'\n'+ "memory: "+memory+'\n'+ "cpu_frequency: "+cpu_frequency+'\n'+ "cpus_number:"+cpus_number );
+		redir='/vt_plugin/virtualmachine_crud_vslice/'+'{{ vslice.id }}'+'/1/'
+		pathname = window.location.pathname;
+		alert('{{ vslice.id }}'+'\n'+'{{ vslice.uuid }}'+'\n'+pathname+'\n'+redir)
+		$.ajax({
+		type: "POST",
+		url: redir,
+		async:false,
+		data : {csrfmiddlewaretoken: document.getElementsByName('csrfmiddlewaretoken')[0].value, name: name_, dpid: dpid, memory:memory, cpu_frequency:cpu_frequency, cpus_number:cpus_number, create_new_vms: "Done", vSliceName: '{{ vslice.name }}', vtamId: '{{vtamId}}' },
+		success: function(msg){
+			console.log("Fatta")
+			},
+		});       
+}	
+			
+function stopVM(vmName, vsliceId){
+    alert ("name: "+vmName+'\n'+     "vsliceId:"+vsliceId+'\n')
+    $.getJSON("/vt_plugin/manage_vm_vslice/"+vsliceId+"/"+vmName+"/stop/");
+}//end startVM
+
+function startVM(vmName, vsliceId){
+    $.getJSON("/vt_plugin/manage_vm_vslice/"+vsliceId+"/"+vmName+"/start/");
+        //alert ("name: "+vmName+'\n'+     "vsliceId:"+vsliceId+'\n')
+}//end startVM
+	
+function rebootVM(vmName, vsliceId){
+    $.getJSON("/vt_plugin/manage_vm_vslice/"+vsliceId+"/"+vmName+"/reboot/");
+        //alert ("name: "+vmName+'\n'+     "vsliceId:"+vsliceId+'\n')
+}//end startVM
+function deleteVM(vmName, vsliceId){
+    $.getJSON("/vt_plugin/manage_vm_vslice/"+vsliceId+"/"+vmName+"/delete/");
+        //alert ("name: "+vmName+'\n'+     "vsliceId:"+vsliceId+'\n')
+}//end startVM
+
+
+function addVtam(){
+    $.getJSON("/vslice/aggregates/add_aggregate_vtam/{{ vslice.id }}/{{ vtamid }}/");
+        //alert ("name: "+vmName+'\n'+     "vsliceId:"+vsliceId+'\n')
+}//end startVM
+
+
+function writeDiv(obj) {
+  vmEmpty=1
+	console.log("witeDIv init")	
+	console.log(obj);
+		tableVertex="";
+		tableEdge="";
+		for (var i=0;i<obj.length;i++){
+		tmp=obj[i];
+		if(tmp.vertices!=null){
+			
+		tableVmStart='<h3>Virtual Machines</h3><table class="aggregateManagerDetail vms" id="tableVm"> <tr><th>Name</th><th>DataPathId</th><th>Type</th> <th>Status</th><th>Memory</th><th>CPU Freq.</th><th>NumCPU</th> <th>Action</th></tr>';
+			var passVert=tmp.vertices;
+			console.log("VERTICES")
+			tableVmBody='';
+			
+			for(var j=0; j<passVert.length; j++){
+			 if(passVert[j].type=="vm"){
+			 vmEmpty=0
+						oddEeven="even";
+						//if (j%2 == 0)oddEeven="even";
+						//else {oddEeven="odd";
+				       tableVmBody=tableVmBody+'<tr class = "'+oddEeven+'">\
+                            <td>'+passVert[j].name+'</td><td>'+passVert[j].dpid+'</td><td>'+passVert[j].type+'</td><td><div id="status'+passVert[j].name+'">none</div></td>\
+                            <td>'+passVert[j].memory+'</td><td>'+passVert[j].cpu_frequency+'</td><td>'+passVert[j].cpus_number+'</td>\
+                            <td>\
+                            <div id="butt'+passVert[j].name+'">\
+                            <button id="create'+passVert[j].name+'" onclick=createVM("'+passVert[j].name+'","'+passVert[j].dpid+'","'+passVert[j].memory+'","'+passVert[j].cpu_frequency+'","'+passVert[j].cpus_number+'")>Create</button>\
+                            <button hidden id="start'+passVert[j].name+'" onclick=startVM("'+passVert[j].name+'",{{vslice.id }})>StartVM</button>\
+                            <button hidden id="stop'+passVert[j].name+'" onclick=stopVM("'+passVert[j].name+'",{{vslice.id }})>StopVM</button>\
+                            <button hidden id="reboot'+passVert[j].name+'" onclick=rebootVM("'+passVert[j].name+'",{{vslice.id }})>RebootVM</button>\
+                            <button hidden id="delete'+passVert[j].name+'" onclick=deleteVM("'+passVert[j].name+'",{{vslice.id }})>DeleteVM</button>\
+                            </div>\
+                            </td></tr>'+'<tr class = "odd"><td colspan="8"><div style="text-align: right" id="ip'+passVert[j].name+'">ssh USERNAME@IP ADDRESS (password: your user password)</div></td></tr>';
+                            
+							console.log(passVert[j])
+					}//endif
+				}//end for
+				//if(oddEeven=="even")oddEeven="odd"
+				//else oddEeven="even"
+				//tableVmBody=tableVmBody+'<tr class = "'+oddEeven+'"><td colspan="7"><div id="ipvm-2">localhost</div></td></tr>';
+			tableVmStop='</table>';
+			tableVm=tableVmStart+tableVmBody+tableVmStop
+			
+			tableVertexStart='<h3>Switches</h3><table class="aggregateManagerDetail vms" id="tableVertex"> <tr><th>DataPathId</th><th>Switch type</th> <th>Tablesize</th></tr>';
+			var passVert=tmp.vertices;
+			console.log("VERTICES")
+			tableVertexBody='';
+			for(var j=0; j<passVert.length; j++){
+			 if(passVert[j].type=="switch"){
+						oddEeven="";
+						if (j%2 == 0)oddEeven="even";
+						else oddEeven="odd";
+				       tableVertexBody=tableVertexBody+'<tr class = "'+oddEeven+'">\
+                            <td>'+passVert[j].dpid+'</td><td>'+passVert[j].switchtype+'</td><td>'+passVert[j].tablesize+'</td></tr>'
+				
+							console.log(passVert[j])
+					}//endif
+				}//end for
+				
+			tableVertexStop='</table>';
+			tableVertex=tableVertexStart+tableVertexBody+tableVertexStop
+		}
+		if(tmp.edges!=null){
+			tableEdgeStart='<h3>Links</h3><table class="aggregateManagerDetail vms" id="tableEdge"> <tr><th>Source Switch</th><th>Destination Switch</th> <th>Bandwidth</th></tr>';
+			tableEdgeBody='';
+			console.log("EDGES")
+			var passEdge=tmp.edges;
+			for(var j=0; j<passEdge.length; j++){
+				oddEeven="";
+				if (j%2 == 0)oddEeven="even";
+				else oddEeven="odd";
+				tableEdgeBody=tableEdgeBody+'<tr id="" class = "'+oddEeven+'">\
+                            <td>'+passEdge[j].srcDPID+'</td><td>'+passEdge[j].dstDPID+'</td><td>'+passEdge[j].bw+'</td></tr>'
+				
+							console.log(passEdge[j])
+				}
+			tableEdgeStop='</table>';
+			tableEdge=tableEdgeStart+tableEdgeBody+tableEdgeStop
+
+		}
+		if(tmp.matches!=null){
+			//console.log("MATCHES")
+			//giveMatchesJson(tmp.matches)
+		}
+	}
+	
+                    
+
+       
+       if (vmEmpty)strFin=tableVertex+tableEdge;
+	     else strFin=tableVm+tableVertex+tableEdge;
+		$("#resourceTable").html(strFin);
+	
+}
+
+
+    function updateVMstatusVslice(){
+        //$.getJSON("/vslice/aggregates/add_aggregate_vtam/{{ vslice.id }}/{{ vtamid }}/");
+        $.getJSON("/vt_plugin/vms_status_vslice/"+{{vslice.id}}+"/", function(data){
+          console.log(data.status)
+           $.each(data.name, function(index,value){
+           
+           vmfield='#status'+value
+           vmfieldip='#ip'+value
+           createbt='#create'+value
+           startbt='#start'+value
+           stopbt='#stop'+value
+           rebootbt='#reboot'+value
+           deletebt='#delete'+value
+           if(data.status[index]!=$(vmfield).html()){
+              if(data.status[index]=="on queue"){
+                 $(createbt).hide();
+                 $(startbt).show();
+                 $(stopbt).hide();
+                 $(rebootbt).hide();
+                 $(deletebt).show();
+                 $(vmfield).html('<img src="/static/media/default/img/loading.gif"/>'+data.status[index]);
+                 console.log('{{request.user}}')
+                 if('{{request.user}}'==null)
+                 $(vmfieldip).html("ssh <IP Address>@"+data.ips[index]+" (password: your user password)");
+                 else {
+                 $(vmfieldip).html("ssh {{request.user}}@"+"pippo"+" (password: your user password)");
+                 $(vmfieldip).show()
+                 }
+             }
+            if(data.status[index]=="created (stopped)"){
+                 $(vmfield).html(data.status[index]);
+                 $(createbt).hide();
+                 $(startbt).show();
+                 $(stopbt).hide();
+                 $(rebootbt).hide();
+                 $(deletebt).show();
+                 if('{{request.user}}'==null)
+                 $(vmfieldip).html("ssh <IP Address>@"+"pippo"+" (password: your user password)");
+                 else {
+                 $(vmfieldip).html("<i>ssh {{request.user}}@"+data.ips[index]+" (password: your user password)</i>");
+                 $(vmfieldip).show()
+                 }
+             }
+             if(data.status[index]=="running"){
+                 $(createbt).hide();
+                 $(startbt).hide();
+                 $(stopbt).show();
+                 $(rebootbt).show();
+                 $(deletebt).hide();
+                 $(vmfield).html(data.status[index]);
+                 $(vmfieldip).html("<i>ssh {{request.user}}@"+data.ips[index]+" (password: your user password)</i>");
+                 $(vmfieldip).show()
+             }
+             if(data.status[index]=="starting..."){
+                 $(createbt).hide();
+                 $(startbt).hide();
+                 $(stopbt).show();
+                 $(rebootbt).show();
+                 $(deletebt).hide();
+                 $(vmfield).html('<img src="/static/media/default/img/loading.gif"/>'+data.status[index]);
+                 $(vmfieldip).html("<i>ssh {{request.user}}@"+data.ips[index]+" (password: your user password)</i>");
+                 $(vmfieldip).show()
+             }
+             if(data.status[index]=="stopping..."){
+                 $(createbt).hide();
+                 $(startbt).show();
+                 $(stopbt).hide();
+                 $(rebootbt).hide();
+                 $(deletebt).show();
+                 $(vmfield).html('<img src="/static/media/default/img/loading.gif"/>'+data.status[index]);
+                 $(vmfieldip).html("<i>ssh {{request.user}}@"+data.ips[index]+" (password: your user password)</i>");
+                 $(vmfieldip).show()
+             }
+            if(data.status[index]=="stopped"){
+                 $(createbt).hide();
+                 $(startbt).show();
+                 $(stopbt).hide();
+                 $(rebootbt).hide();
+                 $(deletebt).show();
+                 $(vmfield).html(data.status[index]);
+                 $(vmfieldip).html("<i>ssh {{request.user}}@"+data.ips[index]+" (password: your user password)</i>");
+                 $(vmfieldip).show()
+             }     
+             if(data.status[index]=="deleting..."){
+                 $(createbt).show();
+                 $(startbt).hide();
+                 $(stopbt).hide();
+                 $(rebootbt).hide();
+                 $(deletebt).hide();
+                 $(vmfield).html('deleted');
+                 $(vmfieldip).html("<i>ssh {{request.user}}@"+data.ips[index]+" (password: your user password)</i>");
+                 $(vmfieldip).show()
+             }
+           }
+           //pirf="buttvm-2"
+           //console.log($("#pirf"))
+           //console.log(data.status[index])
+
+           }
+           );
+           
+           //var vms_table = document.getElementById('table_vms_list');
+           //$.each($("#table_vms_list tr"), function(tr_index, tr_table){
+                //var vmIdValue = tr_table.id.substring(5);
+                //if (tr_table.id != 'table_vms_list_header'){
+                    //var vmIdValue = tr_table.id.substring(5);
+                    //if (!data.status[vmIdValue]) {
+                        // If there are no more VMs present in the server (other than one to be removed),
+                        // delete all SSH particular and common details
+                        //if ($("#tr_vm"+vmIdValue).closest("table#table_vms_list").find('tr[id^="tr_vm"]').not('tr[id$='+vmIdValue+']').length == 0) {
+                        //    $("#tr_vm"+vmIdValue).nextUntil().remove();
+                        //}
+                        // Delete the VM row
+                        //$("#tr_vm"+vmIdValue).remove();
+                    //}
+                //}
+            //}
+          // );
+        });
+                $('#messages').load("/vt_plugin/update_messages/");
+    }
+   
+    var timer = setInterval(function(){
+    updateVMstatusVslice(); 
+    },3000);
+    
+    getResource();
+
+
+	//function handleVMaction(sliceId,vmId,action,vmName){
+  //      if(action == "delete"){
+  //          if(!confirm(" Are you sure you want to delete VM '"+vmName+"'?"))
+  //              return; 
+  //      }
+  //      $.getJSON("../../../vt_plugin/manage_vm/"+sliceId+"/"+vmId+"/"+action+"/");
+  //      updateVMstatus();
+  //  }
+
+
+
+
+
+</script>
+
+{% endblock content %}
